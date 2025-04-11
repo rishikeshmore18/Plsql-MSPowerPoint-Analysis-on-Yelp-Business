@@ -38,4 +38,5 @@ SQL, Excel, Tableau
 Data Cleaning, Database Schema Design, Data Extraction, Data Aggregation, Joins and Subqueries, Data Visualization, Business Insight Generation
 
 ## Sample Images
-![image alt] [https://github.com/rishikeshmore18/Plsql-MSPowerPoint-Analysis-on-Yelp-Business/blob/ad8e0c1a1fb17c90e1b930682f59a017ad511bf4/02%20ERD_final_project.drawio_Rishikesh.png] 
+![02 ERD_final_project drawio_Rishikesh](https://github.com/user-attachments/assets/a4b2ff8a-00a8-4381-8dcc-03b70dfc8bfa)
+
