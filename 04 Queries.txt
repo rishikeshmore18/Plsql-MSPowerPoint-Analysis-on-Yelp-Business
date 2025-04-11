@@ -1,0 +1,187 @@
+--1)How many users have joined Yelp each year since 2010?
+
+SELECT
+  EXTRACT(YEAR FROM join_date) AS year,
+  COUNT(*) AS number_of_users
+FROM
+  user_activity
+WHERE
+  EXTRACT(YEAR FROM join_date) >= 2010
+GROUP BY
+  year
+ORDER BY
+  year
+  
+
+--2) How many users were elite in each of the 10 years from 2012 through 2021? Does it look like the number of elite users is increasing, decreasing,or staying about the same?
+
+SELECT user_year, COUNT(DISTINCT user_id) AS number_of_elite_users
+FROM user_elite_years
+WHERE user_year BETWEEN 2012 AND 2021
+GROUP BY user_year
+ORDER BY user_year;
+
+--3) Which of our users has the most 5-star reviews of all time? Give us the person’s name, when they joined Yelp, how many fans they have, how many funny, useful, and cool ratings they’ve gotten. Please also gives us 3-5 examples of recent 5-star reviews they have written.
+
+
+WITH RankedReviews AS (
+    SELECT
+        r.User_ID,
+        r.Text AS Review_Text,
+        r.Review_Date,
+        ROW_NUMBER() OVER (PARTITION BY r.User_ID ORDER BY r.Review_Date DESC) AS rn
+    FROM 
+        reviews r
+    WHERE 
+        r.Stars = 5
+),
+TopUsers AS (
+    SELECT
+        rr.User_ID,
+        COUNT(*) AS Five_Star_Review_Count
+    FROM 
+        RankedReviews rr
+    GROUP BY 
+        rr.User_ID
+    ORDER BY 
+        COUNT(*) DESC
+    LIMIT 1
+),
+TopReviews AS (
+    SELECT
+        rr.User_ID,
+        rr.Review_Text,
+        rr.Review_Date
+    FROM 
+        RankedReviews rr
+    INNER JOIN TopUsers tu ON rr.User_ID = tu.User_ID
+    WHERE 
+        rr.rn <= 5
+)
+SELECT
+    ua.name,
+    ua.join_date,
+    ua.num_fans,
+    ua.funny_votes_sent,
+    ua.useful_votes_sent,
+    ua.cool_votes_sent,
+    tr.Review_Text,
+    tr.Review_Date
+FROM
+    user_activity ua
+INNER JOIN
+    TopReviews tr ON ua.user_id = tr.User_ID;
+	
+--5) Which US states have the most businesses in our database? Give us the top 10 states.
+
+SELECT state, COUNT(*) AS NumberOfBusinesses
+FROM businesses
+GROUP BY state
+ORDER BY NumberOfBusinesses DESC
+LIMIT 10;
+
+
+--6) What are our top ten business categories? In other words, which 10 categories have the most businesses assigned to them?
+
+SELECT Category_name, COUNT(Business_id) AS NumberOfBusinesses
+FROM Business_categories
+GROUP BY Category_name
+ORDER BY NumberOfBusinesses DESC
+LIMIT 10;
+
+--7)What is the average rating of the businesses in each of those top ten categories?
+
+WITH TopCategories AS (
+    SELECT Category_name
+    FROM Business_categories
+    GROUP BY Category_name
+    ORDER BY COUNT(Business_id) DESC
+    LIMIT 10
+)
+SELECT tc.Category_name, AVG(b.average_Reviews) AS AverageRating
+FROM TopCategories tc
+JOIN Business_categories bc ON tc.Category_name = bc.Category_name
+JOIN businesses b ON bc.Business_id = b.Business_Id
+GROUP BY tc.Category_name
+ORDER BY AverageRating DESC;
+
+--8) We’re wondering what makes users tag a Restaurant review as “funny”. Can you give us 5 examples of the funniest Restaurant reviews and 5 examples of the 10 least funny? We’d also like you to look at a larger set of funny and unfunny reviews and tell us if you see any patterns that separate the two. (We know the last part is qualitative, but tell us anything you see that may be useful.)
+
+--part 1
+SELECT r.Review_ID, r.User_ID, r.Business_ID, r.Text, r.Funny
+FROM reviews r
+JOIN Business_categories bc ON r.Business_ID = bc.Business_id
+WHERE bc.Category_name = 'Restaurants'
+ORDER BY r.Funny DESC
+LIMIT 5;
+
+--part 2
+SELECT r.Review_ID, r.User_ID, r.Business_ID, r.Text, r.Funny
+FROM reviews r
+JOIN Business_categories bc ON r.Business_ID = bc.Business_id
+WHERE bc.Category_name = 'Restaurants' AND r.Funny > 0
+ORDER BY r.Funny ASC
+LIMIT 5;
+
+
+--9) We think the compliments that tips receive are mostly based on how long the tip is. Can you compare the average length of the tip text for the 100 most-complimented tips with the average length of the 100 least-complimented tips and tell us if that seems to be true? (Hint: you will need to use computed properties to answer this question)
+
+SELECT 
+    (SELECT AVG(LENGTH(Tip_text)) 
+     FROM (SELECT Tip_text 
+           FROM tips 
+           ORDER BY numcompliments DESC 
+           LIMIT 100) AS MostComplimentedTips) AS AvgLength_MostComplimented,
+    
+    (SELECT AVG(LENGTH(Tip_text)) 
+     FROM (SELECT Tip_text 
+           FROM tips 
+           ORDER BY numcompliments ASC 
+           LIMIT 100) AS LeastComplimentedTips) AS AvgLength_LeastComplimented;
+
+--10) We are trying to figure out whether restaurant reviews are driven mostly by price range, how many hours the restaurant is open, or the days they are open. Can you please give us a spreadsheet with the data we need to answer that question? (Note from Professor Augustyn: You don’t actually have to hand in a spreadsheet...just give me a table with 10 rows of sample data returned by your query.)
+
+
+SELECT 
+    b.Business_Id,
+    b.Business_Name,
+    (SELECT Attribute_value FROM business_attributes WHERE Business_id = b.Business_Id AND Attribute_name = 'Price Range') AS Price_Range,
+    COUNT(r.Review_ID) AS Total_Reviews,
+    COALESCE(AVG(r.Stars), 0) AS Average_Review_Rating,
+    (SELECT STRING_AGG(DISTINCT Day_of_week, ', ') FROM business_hours WHERE Business_id = b.Business_Id) AS Days_Open,
+    (SELECT STRING_AGG(DISTINCT CONCAT(TO_CHAR(Opening_time, 'HH24:MI'), '-', TO_CHAR(Closing_time, 'HH24:MI')), ', ') FROM business_hours WHERE Business_id = b.Business_Id) AS Hours_Open
+FROM 
+    businesses b
+LEFT JOIN 
+    reviews r ON b.Business_Id = r.Business_ID
+GROUP BY 
+    b.Business_Id
+LIMIT 10;
+
+
+--11) What is the average number of reviews per user in our database?
+
+SELECT AVG(ReviewCount) AS AvgReviewsPerUser
+FROM (
+    SELECT user_id, COUNT(Review_ID) AS ReviewCount
+    FROM reviews
+    GROUP BY user_id
+) AS UserReviewCounts;
+
+
+--12)For businesses that have been in our database since 2010, how do their average review ratings compare to newer businesses?
+
+SELECT 
+    CASE 
+        WHEN first_review_year <= 2010 THEN 'Old Business'
+        ELSE 'New Business'
+    END AS Business_Type,
+    AVG(Stars) AS Average_Review_Rating
+FROM 
+    (SELECT 
+         Business_ID, 
+         MIN(EXTRACT(YEAR FROM Review_Date)) AS first_review_year
+     FROM reviews
+     GROUP BY Business_ID) AS FirstReviewYear
+JOIN reviews ON FirstReviewYear.Business_ID = reviews.Business_ID
+GROUP BY Business_Type;

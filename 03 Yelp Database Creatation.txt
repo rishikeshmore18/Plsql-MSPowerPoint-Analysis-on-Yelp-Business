@@ -1,0 +1,167 @@
+--Businesses.csv
+
+CREATE TABLE businesses (
+    Business_Id VARCHAR(50),
+    Business_Name VARCHAR(225),
+    Street_Address VARCHAR(100),
+    city VARCHAR(225),
+    state CHAR(3),
+    postal_Code CHAR(9),
+    latitude DECIMAL(9, 7),
+    longitude DECIMAL(10, 7),
+    average_Reviews DECIMAL(3, 1) CHECK (averageReviews >= 0.0 AND averageReviews <= 5.0),
+    number_Of_Reviews INT,
+    isOpen INTEGER CHECK (isOpen IN (0, 1))
+);
+
+--Alter command
+
+ALTER TABLE businesses
+ALTER COLUMN streetAddress TYPE VARCHAR(100);
+ADD PRIMARY KEY (Business_Id);
+
+
+--CVS table commands
+
+\COPY businesses(business_Id, business_Name, street_Address, city, state, postal_Code, latitude, longitude, average_Reviews, number_Of_Reviews, isOpen) FROM '/Users/komalmore/Downloads/businesses.csv' DELIMITER ',' CSV HEADER
+
+--Businessattributes
+
+CREATE TABLE business_attributes (
+    Business_id VARCHAR(22),
+    Attribute_name VARCHAR(255), 
+    Attribute_value VARCHAR(255) 
+);
+
+ALTER TABLE business_attributes
+ADD CONSTRAINT pk_business_attributes PRIMARY KEY (Business_id, Attribute_name),
+ADD FOREIGN KEY (Business_id) REFERENCES businesses(Business_Id);
+
+--CVS commands
+
+\COPY business_attributes (business_id,attribute_name,attribute_value) FROM '/Users/komalmore/Downloads/business_attributes.csv' DELIMITER ',' CSV HEADER
+
+
+
+--Businesscategories
+
+CREATE TABLE Business_categories(
+    Business_id VARCHAR(22),
+    Category_name VARCHAR(255) -- Adjust length as needed
+);
+
+ALTER TABLE Business_categories
+ADD FOREIGN KEY (Business_id) REFERENCES businesses(Business_Id);
+
+--CVS Table command
+
+\COPY business_categories (business_id,category_name) FROM '/Users/komalmore/Downloads/business_categories.csv' DELIMITER ',' CSV HEADER
+
+--businesshours.csv
+
+CREATE TABLE business_hours (
+    Business_id VARCHAR(22),
+    Day_of_week VARCHAR(50), -- Adjust length as needed
+    Opening_time TIME,
+    Closing_time TIME
+);
+
+ALTER TABLE business_hours
+ADD FOREIGN KEY (Business_id) REFERENCES businesses(Business_Id);
+
+--CVS Table command
+
+\COPY business_hours (business_id,day_of_week,opening_time,closing_time) FROM '/Users/komalmore/Downloads/business_hours.csv' DELIMITER ',' CSV HEADER
+
+
+
+--tips.csv
+CREATE TABLE tips (
+    User_id VARCHAR(22),
+    Business_id VARCHAR(22),
+    Tip_text TEXT,
+    Tip_date_time TIMESTAMP,
+    numcompliments INTEGER
+);
+
+ALTER TABLE tips
+ADD FOREIGN KEY (User_id) REFERENCES user_activity(user_id),
+ADD FOREIGN KEY (Business_id) REFERENCES businesses(Business_Id);
+
+--CVS Table command
+
+\COPY tips (user_id,business_id,tip_text,tip_date_time,numcompliments) FROM '/Users/komalmore/Downloads/tips.csv' DELIMITER ',' CSV HEADER
+
+--users.csv
+
+CREATE TABLE user_activity (
+    user_id VARCHAR(22),
+    name VARCHAR(255),
+    num_reviews_left INTEGER,
+    join_date TIMESTAMP,
+    useful_votes_sent INTEGER,
+    funny_votes_sent INTEGER,
+    cool_votes_sent INTEGER,
+    num_fans INTEGER,
+    avg_rating DECIMAL(3, 2),
+    hot_compliments_received INTEGER,
+    more_compliments_received INTEGER,
+    profile_compliments_received INTEGER,
+    cute_compliments_received INTEGER,
+    list_compliments_received INTEGER,
+    note_compliments_received INTEGER,
+    plain_compliments_received INTEGER,
+    cool_compliments_received INTEGER,
+    funny_compliments_received INTEGER,
+    writer_compliments_received INTEGER,
+    photo_compliments_received INTEGER
+);
+
+ALTER TABLE user_activity
+ADD PRIMARY KEY (user_id);
+
+ALTER TABLE user_activity
+ADD PRIMARY KEY (user_id);
+
+--Cvs table commands
+
+\COPY user_activity (user_id, name, num_reviews_left, join_date, useful_votes_sent, funny_votes_sent, cool_votes_sent,num_fans, avg_rating, hot_compliments_received, more_compliments_received, profile_compliments_received,cute_compliments_received, list_compliments_received, note_compliments_received, plain_compliments_received,cool_compliments_received, funny_compliments_received, writer_compliments_received, photo_compliments_received) FROM '/Users/komalmore/Downloads/users_part0.csv' DELIMITER ',' CSV HEADER
+
+--users_part0.csv to users_part2.csv 
+
+
+
+--usereliteyears
+CREATE TABLE user_elite_years (
+	user_id VARCHAR(22),
+	user_year INTEGER
+);
+
+ALTER TABLE user_elite_years
+ADD CONSTRAINT pk_user_elite_years PRIMARY KEY (user_id, user_year),
+ADD FOREIGN KEY (user_id) REFERENCES user_activity(user_id);
+
+--Cvs commands
+
+\COPY user_elite_years (user_id,user_year) FROM '/Users/komalmore/Downloads/user_elite_years.csv' DELIMITER ',' CSV HEADER
+
+
+--Reviews Table 
+
+CREATE TABLE reviews (
+    Review_ID VARCHAR(255) PRIMARY KEY,
+    User_ID VARCHAR(22), -- Adjusted to match the length in user_activity table
+    Business_ID VARCHAR(22), -- Adjusted to match the length in businesses table
+    Stars INT CHECK (Stars BETWEEN 1 AND 5),
+    Useful INT DEFAULT 0,
+    Funny INT DEFAULT 0,
+    Cool INT DEFAULT 0,
+    Text TEXT,
+    Review_Date DATE,    
+    FOREIGN KEY (Business_ID) REFERENCES businesses(Business_Id) -- reference the businesses table
+);
+
+
+\COPY reviews (Review_ID, User_ID, Business_ID, Stars, Useful, Funny, Cool, Text, Review_Date) FROM '/Users/komalmore/Downloads/business_reviews_part1.csv' DELIMITER ',' CSV HEADER;
+
+--business_reviews_part1 to business_reviews_part29
